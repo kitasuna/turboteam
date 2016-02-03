@@ -1,5 +1,6 @@
 import re
 from sys import argv
+from collections import namedtuple
 
 def file_len(fname):
     with open(fname) as f:
@@ -7,10 +8,35 @@ def file_len(fname):
             pass
     return i + 1
 
+def is_line_date(line):
+    pattern = re.compile('^(\d+/\d+/\d+)')
+    return pattern.match(line) 
+
+def is_line_chat(line):
+    pattern = re.compile('^(\d+:\d+\t(.+)\t(.+))')
+    return pattern.match(line) 
+
+def parse_line(line, current_date = False):
+    Dateline = namedtuple('Dateline', 'date')
+    Chatline = namedtuple('Chatline', 'user text')
+    Badline = namedtuple('Badline', 'text')
+
+    l = Badline(line)
+
+    match = is_line_date(line)
+    if match:
+        l = Dateline(match.group(1)) 
+
+    match = is_line_chat(line)
+    if match:
+        l = Chatline(match.group(2), 'text in here') 
+
+    return l
+        
+    
+
 def main():
     script, filename = argv
-    date_pattern = re.compile('^(\d+/\d+/\d+)')
-    dude_pattern = re.compile('^(\d+:\d+\t(.+)\t(.+))')
     current_date = False
     daily_tally = 0;
     unused_lines = 0;
@@ -24,8 +50,10 @@ def main():
                 unused_lines += 1
                 continue
 
-            match = date_pattern.match(line)
-            if match:
+            l = parse_line(line)
+            print(l)
+            """
+            if is_line_date(line):
                 if current_date:
                     daily_lines[current_date] = daily_tally
                 current_date = match.group(1)
@@ -55,5 +83,5 @@ def main():
         print('unused line count is', unused_lines)
         print(daily_lines)
         print(dude_lines)
-
+        """
 main()
