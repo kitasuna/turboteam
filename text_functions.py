@@ -57,3 +57,6 @@ def fuck_density(word, person, word_dict):
     except KeyError:
         return 0
 
+# create a sliced version of the file based on start / end dates
+def slice_file(start_date, end_date): 
+    pass

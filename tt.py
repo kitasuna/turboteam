@@ -1,15 +1,32 @@
 from text_functions import *
 from sys import argv
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input-file', required=True, help='File to parse')
+    parser.add_argument('-d', '--density', required=False, help='Check the density of a certain word')
+    parser.add_argument('--interactive', required=False, action='store_true', help='Run in interactive mode')
+    opts = parser.parse_args()
+    # stole this from a tutorial
+    # leaving it in in case it comes in handy
+    #if not (opts.plot_file or opts.csv_file):
+    #    parser.error("You have to specify either a --csv-file or --plot-file!")
+    #return opts
+    return opts
 
 def main():
-    script, filename = argv
     current_date = False
     daily_tally = 0;
     unused_lines = 0;
     daily_lines = {}
     dude_lines = {}
     word_count = {}
-    with open(filename, 'r') as f:
+
+    # gets our command line args
+    opts = parse_args()
+
+    with open(opts.input_file, 'r') as f:
         for line in f:
 
             # Figure out of this is a date or a chat entry
@@ -45,7 +62,7 @@ def main():
         if current_date:
             daily_lines[current_date] = daily_tally
         
-        print('Line count is ' + str(file_len(filename)))
+        print('Line count is ' + str(file_len(opts.input_file)))
         print('sum of daily line count is', str(sum(daily_lines.values())))
         print('sum of dude line count is', str(sum(dude_lines.values())))
         print('unused line count is', unused_lines)
@@ -54,14 +71,17 @@ def main():
 
         
         # Fuck density!
-        for dude in word_count:
-            print(dude + "'s fuck density is: " + str(fuck_density('fuck',dude,word_count)))
+        if(opts.density):
+            for dude in word_count:
+                print(dude + "'s " + opts.density + " density is: " + str(fuck_density(opts.density,dude,word_count)))
+
         # Lists dudes to make console input easy
         for dude in word_count:
             print(dude)
 
-        while input('Stay ') != 'no':
-                he_says_what_how_much(input('Who? '),input('What? (lowercase) '),word_count)
+        if(opts.interactive):
+            while input('Stay ') != 'no':
+                    he_says_what_how_much(input('Who? '),input('What? (lowercase) '),word_count)
 #Commented code prints everything. Ridiculously long and not useful at all.
 #for people in word_count:
 #           print('***********************' + str(people) + ' says')
