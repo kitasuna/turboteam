@@ -15,7 +15,7 @@ def is_line_chat(line):
     pattern = re.compile('^(\d+:\d+\t(.+)\t(.+))')
     return pattern.match(line) 
 
-def parse_line(line, current_date = False):
+def parse_line(line):
     Dateline = namedtuple('Dateline', 'date')
     Chatline = namedtuple('Chatline', 'user text')
     Badline = namedtuple('Badline', 'text')
