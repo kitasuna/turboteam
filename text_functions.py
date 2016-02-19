@@ -47,8 +47,8 @@ def line_word_count(line, person, word_dict):
 def he_says_what_how_much(he, what, where):
     print( str(he) + ' says "' + str(what) + '" ' + str(where[he].get(what, 'actually, no he dont' )))
 
-# Really it is word density but fuck density sounds infinitely cooler
-def fuck_density(word, person, word_dict):
+# Figure out how often word appears as a percentage of total words
+def word_density(word, person, word_dict):
     total_value = 0
     for value in word_dict[person].values():
         total_value += value

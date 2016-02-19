@@ -20,9 +20,9 @@ def parse_args():
     return opts
 
 def main():
+    daily_tally = 0
+    unused_lines = 0
     current_date = False
-    daily_tally = 0;
-    unused_lines = 0;
     daily_lines = {}
     dude_lines = {}
     word_count = {}
@@ -30,14 +30,17 @@ def main():
     # gets our command line args
     opts = parse_args()
 
+    # set up our log file object
+    logfile = LineLog(opts.input_file)
+
     # make sure our dates (if we have them) parse correctly
     if(opts.end_date):
         try:
-            end_date = datetime.datetime.strptime(opts.end_date, "%Y/%m/%d")
+            end_date = datetime.strptime(opts.end_date, "%Y/%m/%d")
+            logfile.set_end_date(end_date)
         except ValueError:
             end_date = None
 
-    logfile = LineLog(opts.input_file)
 
     # make sure our dates (if we have them) parse correctly
     if(opts.start_date):
@@ -49,25 +52,14 @@ def main():
 
     while logfile.current_line < logfile.num_lines:
 
-        # Figure out of this is a date or a chat entry
         l = logfile.get_next_line()
         
-        if type(l).__name__ == 'Dateline':
-            # see if we even need to bother with this block
-            # this could be optimized later
-            # no need to loop through everything if we know it's before the
-            # start date
-        
-            # If current date is already set, reset the tally
-            # and set a new date
-            if current_date:
-                daily_lines[current_date] = daily_tally
-                current_date = l.date
-                daily_tally = 0
-            else:
-                current_date = l.date
-        elif type(l).__name__ == 'Chatline':
-            daily_tally += 1 
+        if logfile.current_date != current_date:
+            daily_lines[logfile.current_date.strftime('%Y/%m/%d')] = 0
+            current_date = logfile.current_date
+
+        if type(l).__name__ == 'Chatline':
+            daily_lines[logfile.current_date.strftime('%Y/%m/%d')] += 1
 
             # Find who wrote this one, if anyone
             dude_name = l.user
@@ -79,13 +71,13 @@ def main():
                 dude_lines[dude_name] += 1
             else:
                 dude_lines[dude_name] = 1
-        else:
-            print('No match for "', l.text, '"');
+        elif type(l).__name__ == 'Badline':
+            #print('No match for "', l.text, '"');
             unused_lines += 1
 
         # Write out the last day
-        if current_date:
-            daily_lines[current_date] = daily_tally
+        #if current_date:
+        #    daily_lines[current_date] = daily_tally
         
     print('Line count is ' + str(file_len(opts.input_file)))
     print('sum of daily line count is', str(sum(daily_lines.values())))
@@ -98,7 +90,7 @@ def main():
     # Fuck density!
     if(opts.density):
         for dude in word_count:
-            print(dude + "'s " + opts.density + " density is: " + str(fuck_density(opts.density,dude,word_count)))
+            print(dude + "'s " + opts.density + " density is: " + str(word_density(opts.density,dude,word_count)))
 
     # Lists dudes to make console input easy
     for dude in word_count:
