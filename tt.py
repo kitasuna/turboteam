@@ -4,6 +4,11 @@ from datetime import datetime
 from linelog import LineLog
 import argparse
 
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.decomposition import NMF, LatentDirichletAllocation
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.datasets import load_iris
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-file', required=True, help='File to parse')
@@ -19,6 +24,13 @@ def parse_args():
     #return opts
     return opts
 
+def print_top_words(model, feature_names, n_top_words):
+    for topic_idx, topic in enumerate(model.components_):
+        print("Topic #%d:" % topic_idx)
+        print(" ".join([feature_names[i]
+                        for i in topic.argsort()[:-n_top_words - 1:-1]]))
+    print()
+
 def main():
     daily_tally = 0
     unused_lines = 0
@@ -26,6 +38,11 @@ def main():
     daily_lines = {}
     dude_lines = {}
     word_count = {}
+    chat_lines = {} # List of chat text blocks for topic extraction
+
+    n_features = 2000
+    n_topics = 10
+    n_top_words = 20
 
     # gets our command line args
     opts = parse_args()
@@ -67,6 +84,10 @@ def main():
                 #Word count is a dictionary that counts words for each person
             word_count.setdefault(dude_name,{})
             line_word_count(l.text, l.user, word_count)
+            if(logfile.current_date.strftime('%Y/%m/%d') in chat_lines):
+                chat_lines[logfile.current_date.strftime('%Y/%m/%d')] += ' ' + l.text
+            else:
+                chat_lines[logfile.current_date.strftime('%Y/%m/%d')] = l.text;
             if dude_name in dude_lines:
                 dude_lines[dude_name] += 1
             else:
@@ -79,15 +100,32 @@ def main():
         #if current_date:
         #    daily_lines[current_date] = daily_tally
         
-    print('Line count is ' + str(file_len(opts.input_file)))
-    print('sum of daily line count is', str(sum(daily_lines.values())))
-    print('sum of dude line count is', str(sum(dude_lines.values())))
-    print('unused line count is', unused_lines)
-    print(daily_lines)
-    print(dude_lines)
+    #print('Line count is ' + str(file_len(opts.input_file)))
+    #print('sum of daily line count is', str(sum(daily_lines.values())))
+    #print('sum of dude line count is', str(sum(dude_lines.values())))
+    #print('unused line count is', unused_lines)
+    #print(daily_lines)
+    #print(dude_lines)
+    
+    # Topic extraction
+    # Use tf-idf features for NMF.
+    tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
+    tfidf = tfidf_vectorizer.fit_transform(chat_lines.values())
 
     
-    # Fuck density!
+    # Use tf (raw term count) features for LDA.
+    tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2, max_features=n_features,
+                                    stop_words='english')
+    tf = tf_vectorizer.fit_transform(chat_lines.values())
+
+    # Fit the NMF model
+    nmf = NMF(n_components=n_topics, random_state=1, alpha=.1, l1_ratio=.5).fit(tfidf)
+
+    print("\nTopics in NMF model:")
+    tfidf_feature_names = tfidf_vectorizer.get_feature_names()
+    print_top_words(nmf, tfidf_feature_names, n_top_words)
+
+    # Find word density
     if(opts.density):
         for dude in word_count:
             print(dude + "'s " + opts.density + " density is: " + str(word_density(opts.density,dude,word_count)))
