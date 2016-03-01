@@ -40,9 +40,10 @@ def main():
     word_count = {}
     chat_lines = {} # List of chat text blocks for topic extraction
 
-    n_features = 2000
+    n_features = 1000
+    n_samples = 2000
     n_topics = 10
-    n_top_words = 20
+    n_top_words = 10
 
     # gets our command line args
     opts = parse_args()
@@ -109,21 +110,32 @@ def main():
     
     # Topic extraction
     # Use tf-idf features for NMF.
-    tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
+    tfidf_vectorizer = TfidfVectorizer(max_df=0.4, min_df=0.01, stop_words='english')
+    # tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
     tfidf = tfidf_vectorizer.fit_transform(chat_lines.values())
 
-    
     # Use tf (raw term count) features for LDA.
-    tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2, max_features=n_features,
+    tf_vectorizer = CountVectorizer(max_df=0.4, min_df=0.1,
                                     stop_words='english')
     tf = tf_vectorizer.fit_transform(chat_lines.values())
 
     # Fit the NMF model
-    nmf = NMF(n_components=n_topics, random_state=1, alpha=.1, l1_ratio=.5).fit(tfidf)
+    nmf = NMF(n_components=n_topics, random_state=1, alpha=0, l1_ratio=0).fit(tfidf)
 
     print("\nTopics in NMF model:")
     tfidf_feature_names = tfidf_vectorizer.get_feature_names()
     print_top_words(nmf, tfidf_feature_names, n_top_words)
+
+    print("Fitting LDA models with tf features, n_samples=%d and n_features=%d..."
+          % (n_samples, n_features))
+    lda = LatentDirichletAllocation(n_topics=n_topics, max_iter=5,
+                                    learning_method='online', learning_offset=50.,
+                                    random_state=0)
+    lda.fit(tf)
+
+    print("\nTopics in LDA model:")
+    tf_feature_names = tf_vectorizer.get_feature_names()
+    print_top_words(lda, tf_feature_names, n_top_words)
 
     # Find word density
     if(opts.density):
@@ -131,8 +143,8 @@ def main():
             print(dude + "'s " + opts.density + " density is: " + str(word_density(opts.density,dude,word_count)))
 
     # Lists dudes to make console input easy
-    for dude in word_count:
-        print(dude)
+    # for dude in word_count:
+    #     print(dude)
 
     if(opts.interactive):
         while input('Stay ') != 'no':
