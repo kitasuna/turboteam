@@ -24,7 +24,7 @@ def main():
     unused_lines = 0
     current_date = False
     daily_lines = {}
-    dude_lines = {}
+    user_lines = {}
     word_count = {}
 
     # gets our command line args
@@ -62,15 +62,15 @@ def main():
             daily_lines[logfile.current_date.strftime('%Y/%m/%d')] += 1
 
             # Find who wrote this one, if anyone
-            dude_name = l.user
-                #Austin fucking around here
-                #Word count is a dictionary that counts words for each person
-            word_count.setdefault(dude_name,{})
+            user_name = l.user
+
+            #Word count is a dictionary that counts words for each person
+            word_count.setdefault(user_name,{})
             line_word_count(l.text, l.user, word_count)
-            if dude_name in dude_lines:
-                dude_lines[dude_name] += 1
+            if user_name in user_lines:
+                user_lines[user_name] += 1
             else:
-                dude_lines[dude_name] = 1
+                user_lines[user_name] = 1
         elif type(l).__name__ == 'Badline':
             #print('No match for "', l.text, '"');
             unused_lines += 1
@@ -81,28 +81,24 @@ def main():
         
     print('Line count is ' + str(file_len(opts.input_file)))
     print('sum of daily line count is', str(sum(daily_lines.values())))
-    print('sum of dude line count is', str(sum(dude_lines.values())))
+    print('sum of user line count is', str(sum(user_lines.values())))
     print('unused line count is', unused_lines)
-    print(daily_lines)
-    print(dude_lines)
+    print("Chat lines per day: " + str(daily_lines))
+    print("Chat lines per user: " + str(user_lines))
 
     
-    # Fuck density!
+    # Word density!
     if(opts.density):
-        for dude in word_count:
-            print(dude + "'s " + opts.density + " density is: " + str(word_density(opts.density,dude,word_count)))
+        for user in word_count:
+            print(user + "'s " + opts.density + " density is: " + str(word_density(opts.density,user,word_count)))
 
-    # Lists dudes to make console input easy
-    for dude in word_count:
-        print(dude)
+    # Lists users to make console input easy
+    # for user in word_count:
+    print('Users: ' + " | ".join(word_count))
 
     if(opts.interactive):
         while input('Stay ') != 'no':
             he_says_what_how_much(input('Who? '),input('What? (lowercase) '),word_count)
-#Commented code prints everything. Ridiculously long and not useful at all.
-#for people in word_count:
-#           print('***********************' + str(people) + ' says')
-#           print(word_count[people].items())
 
 main()
 
